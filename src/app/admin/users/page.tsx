@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import CreateUserDialog from "@/components/users/CreateUserDialog";
-import { ROLE_LABELS, ROLES } from "@/lib/constants/roles";
+import { ROLE_LABELS, ROLES, VISIBLE_ROLE_LABELS, VISIBLE_ROLES } from "@/lib/constants/roles";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,10 +60,19 @@ export default function UsersPage() {
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
-        if (!searchQuery.trim()) return users;
+        
+        console.log('Users and their roles:', users.map(u => ({ name: u.name, role: u.role })));
+        
+        // First filter out ghost users
+        const nonGhostUsers = users.filter(user => user.role !== ROLES.GHOST);
+        
+        console.log('After ghost filter:', nonGhostUsers.map(u => ({ name: u.name, role: u.role })));
+        
+        // Then apply search filter if there's a query
+        if (!searchQuery.trim()) return nonGhostUsers;
 
         const query = searchQuery.toLowerCase();
-        return users.filter(
+        return nonGhostUsers.filter(
             (user) =>
                 user.name.toLowerCase().includes(query) ||
                 user.email.toLowerCase().includes(query)
@@ -201,7 +210,7 @@ export default function UsersPage() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                                            {Object.entries(VISIBLE_ROLE_LABELS).map(([value, label]) => (
                                                 <SelectItem key={value} value={value}>
                                                     {label}
                                                 </SelectItem>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { ROLES, ROLE_LABELS } from "@/lib/constants/roles";
+import { VISIBLE_ROLES, VISIBLE_ROLE_LABELS } from "@/lib/constants/roles";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,7 @@ export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogPr
     const [formData, setFormData] = useState({
         name: "",
         email: "",
-        role: ROLES.USER,
+        role: VISIBLE_ROLES.USER,
     });
     const [isChecking, setIsChecking] = useState(false);
     const [showEmailValidation, setShowEmailValidation] = useState(false);
@@ -63,7 +63,7 @@ export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogPr
             await createUser(formData);
             toast.success("User created successfully", { id: toastId });
             onClose();
-            setFormData({ name: "", email: "", role: ROLES.USER });
+            setFormData({ name: "", email: "", role: VISIBLE_ROLES.USER });
             setShowEmailValidation(false);
         } catch (err) {
             toast.error("Failed to create user", { id: toastId });
@@ -112,7 +112,7 @@ export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogPr
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                                {Object.entries(VISIBLE_ROLE_LABELS).map(([value, label]) => (
                                     <SelectItem key={value} value={value}>
                                         {label}
                                     </SelectItem>
