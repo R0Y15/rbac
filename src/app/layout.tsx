@@ -1,6 +1,12 @@
+// 'use client';
+
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import ConvexClientProvider from "@/components/providers/ConvexClientProvider";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "@/contexts/AuthContext";
+import AuthCheck from "@/components/auth/AuthCheck";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -25,10 +31,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ConvexClientProvider>
+          <AuthProvider>
+            <AuthCheck>{children}</AuthCheck>
+          </AuthProvider>
+        </ConvexClientProvider>
+        <Toaster position="top-right" />
       </body>
     </html>
   );
