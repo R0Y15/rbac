@@ -3,7 +3,7 @@ export const ROLES = {
   SUPER_ADMIN: "super_admin", // Level 4
   ADMIN: "admin",     // Level 3
   USER: "user",       // Level 2
-  // VIEWER: "viewer",   // Level 1 (lowest)
+  VIEWER: "viewer",   // Level 1 (lowest)
 } as const;
 
 export const ROLE_LEVELS = {

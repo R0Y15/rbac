@@ -13,20 +13,34 @@ export const createUser = mutation({
     args: {
         name: v.string(),
         email: v.string(),
+        password: v.string(),
         role: v.string(),
-        profilePicture: v.optional(v.string()),
+        status: v.union(v.literal("active"), v.literal("inactive")),
+        profilePicture: v.optional(v.union(v.string(), v.null())),
     },
     handler: async (ctx, args) => {
+        // Check if email already exists
+        const existingUser = await ctx.db
+            .query("users")
+            .filter((q) => q.eq(q.field("email"), args.email))
+            .first();
+
+        if (existingUser) {
+            throw new Error("Email already registered");
+        }
+
         const userId = await ctx.db.insert("users", {
             name: args.name,
             email: args.email,
+            password: args.password,
             role: args.role,
+            status: args.status,
             profilePicture: args.profilePicture ?? undefined,
-            status: "active",
             createdAt: Date.now(),
             updatedAt: Date.now(),
         });
-        return userId;
+
+        return await ctx.db.get(userId);
     },
 });
 
