@@ -37,7 +37,7 @@ export default function RootLayout({
             <AuthCheck>{children}</AuthCheck>
           </AuthProvider>
         </ConvexClientProvider>
-        <Toaster position="top-right" />
+        <Toaster position="top-center" />
       </body>
     </html>
   );

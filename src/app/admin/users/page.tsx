@@ -60,14 +60,14 @@ export default function UsersPage() {
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
-        
+
         console.log('Users and their roles:', users.map(u => ({ name: u.name, role: u.role })));
-        
+
         // First filter out ghost users
         const nonGhostUsers = users.filter(user => user.role !== ROLES.GHOST);
-        
+
         console.log('After ghost filter:', nonGhostUsers.map(u => ({ name: u.name, role: u.role })));
-        
+
         // Then apply search filter if there's a query
         if (!searchQuery.trim()) return nonGhostUsers;
 
@@ -124,7 +124,7 @@ export default function UsersPage() {
     };
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="max-w-screen-xl mx-auto px-4 space-y-6 p-6">
             <div className="space-y-2">
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Hi, {user?.name}! 👋
@@ -136,14 +136,9 @@ export default function UsersPage() {
 
             <div className="flex justify-between items-center">
                 <h2 className="text-lg font-medium">Manage Users</h2>
-                <div className="flex gap-2">
-                    <Button onClick={() => setIsModalOpen(true)}>
-                        Add User
-                    </Button>
-                    <Button variant="outline" onClick={logout}>
-                        Sign Out
-                    </Button>
-                </div>
+                <Button onClick={() => setIsModalOpen(true)}>
+                    Add User
+                </Button>
             </div>
 
             <div className="flex items-center space-x-2 max-w-sm">

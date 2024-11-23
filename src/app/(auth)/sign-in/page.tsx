@@ -49,7 +49,7 @@ export default function SignInPage() {
             login(user);
             router.push('/admin/users');
         } catch (error: any) {
-            toast.error(error.message || 'Failed to sign in', { id: toastId });
+            toast.error('Failed to sign in', { id: toastId });
         } finally {
             setIsLoading(false);
         }

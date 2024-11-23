@@ -26,10 +26,14 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogProps) {
     const createUser = useMutation(api.users.createUser);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        name: string;
+        email: string;
+        role: keyof typeof VISIBLE_ROLES;
+    }>({
         name: "",
         email: "",
-        role: VISIBLE_ROLES.USER,
+        role: "USER",
     });
     const [isChecking, setIsChecking] = useState(false);
     const [showEmailValidation, setShowEmailValidation] = useState(false);
@@ -63,7 +67,7 @@ export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogPr
             await createUser(formData);
             toast.success("User created successfully", { id: toastId });
             onClose();
-            setFormData({ name: "", email: "", role: VISIBLE_ROLES.USER });
+            setFormData({ name: "", email: "", role: "USER" });
             setShowEmailValidation(false);
         } catch (err) {
             toast.error("Failed to create user", { id: toastId });
@@ -106,7 +110,7 @@ export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogPr
                         <Label htmlFor="role">Role</Label>
                         <Select
                             value={formData.role}
-                            onValueChange={(value) => setFormData({ ...formData, role: value })}
+                            onValueChange={(value) => setFormData({ ...formData, role: value as keyof typeof VISIBLE_ROLES })}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a role" />
