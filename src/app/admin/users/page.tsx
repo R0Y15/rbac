@@ -37,9 +37,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
+import ProfilePicture from "@/components/users/ProfilePicture";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
 
 export default function UsersPage() {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
+    const {
+        canEditUser,
+        canDeleteUser,
+        canCreateUser,
+        canViewRole,
+        canUpdateStatus,
+    } = useRolePermissions();
     const users = useQuery(api.users.listUsers);
     const [searchQuery, setSearchQuery] = useState("");
     const updateUserRole = useMutation(api.users.updateUserRole);
@@ -60,24 +69,17 @@ export default function UsersPage() {
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
+        let visibleUsers = users.filter(u => canViewRole(u.role));
 
-        console.log('Users and their roles:', users.map(u => ({ name: u.name, role: u.role })));
-
-        // First filter out ghost users
-        const nonGhostUsers = users.filter(user => user.role !== ROLES.GHOST);
-
-        console.log('After ghost filter:', nonGhostUsers.map(u => ({ name: u.name, role: u.role })));
-
-        // Then apply search filter if there's a query
-        if (!searchQuery.trim()) return nonGhostUsers;
+        if (!searchQuery.trim()) return visibleUsers;
 
         const query = searchQuery.toLowerCase();
-        return nonGhostUsers.filter(
+        return visibleUsers.filter(
             (user) =>
                 user.name.toLowerCase().includes(query) ||
                 user.email.toLowerCase().includes(query)
         );
-    }, [users, searchQuery]);
+    }, [users, searchQuery, canViewRole]);
 
     if (!users) return <div>Loading...</div>;
 
@@ -136,9 +138,11 @@ export default function UsersPage() {
 
             <div className="flex justify-between items-center">
                 <h2 className="text-lg font-medium">Manage Users</h2>
-                <Button onClick={() => setIsModalOpen(true)}>
-                    Add User
-                </Button>
+                {canCreateUser() && (
+                    <Button onClick={() => setIsModalOpen(true)}>
+                        Add User
+                    </Button>
+                )}
             </div>
 
             <div className="flex items-center space-x-2 max-w-sm">
@@ -165,7 +169,7 @@ export default function UsersPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Name</TableHead>
+                        <TableHead>User</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Status</TableHead>
@@ -192,71 +196,86 @@ export default function UsersPage() {
                         </TableRow>
                     ) : (
                         filteredUsers.map((user: any) => (
-                            <TableRow key={user._id}>
-                                <TableCell>{user.name}</TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>
-                                    <Select
-                                        value={user.role}
-                                        onValueChange={(value) => handleRoleChange(user._id, value)}
-                                        disabled={updating.id === user._id && updating.field === 'role'}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(VISIBLE_ROLE_LABELS).map(([value, label]) => (
-                                                <SelectItem key={value} value={value}>
-                                                    {label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </TableCell>
-                                <TableCell>
-                                    <Select
-                                        value={user.status}
-                                        onValueChange={(value: "active" | "inactive") =>
-                                            handleStatusChange(user._id, value)
-                                        }
-                                        disabled={updating.id === user._id && updating.field === 'status'}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="active">Active</SelectItem>
-                                            <SelectItem value="inactive">Inactive</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </TableCell>
-                                <TableCell>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                                onClick={() => setUserToEdit(user)}
-                                                className="cursor-pointer"
-                                            >
-                                                <Pencil className="h-4 w-4 mr-2" />
-                                                Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => setUserToDelete({ id: user._id, name: user.name })}
-                                                className="cursor-pointer text-destructive focus:text-destructive"
-                                            >
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        ))
+                            user.role !== ROLES.GHOST ? (
+                                <TableRow key={user._id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <ProfilePicture
+                                                userId={user._id}
+                                                name={user.name}
+                                                profilePicture={user.profilePicture}
+                                                size="sm"
+                                            />
+                                            <span>{user.name}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell>
+                                        <Select
+                                            value={user.role}
+                                            onValueChange={(value) => handleRoleChange(user._id, value)}
+                                            disabled={!canEditUser(user.role) || updating.id === user._id}
+                                        >
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {Object.entries(VISIBLE_ROLE_LABELS).map(([value, label]) => (
+                                                    <SelectItem key={value} value={value}>
+                                                        {label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Select
+                                            value={user.status}
+                                            onValueChange={(value: "active" | "inactive") =>
+                                                handleStatusChange(user._id, value)
+                                            }
+                                            disabled={!canUpdateStatus(user.role) || updating.id === user._id}
+                                        >
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="active">Active</SelectItem>
+                                                <SelectItem value="inactive">Inactive</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {canEditUser(user.role) && (
+                                                    <DropdownMenuItem onClick={() => setUserToEdit(user)}>
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {canDeleteUser(user.role) && (
+                                                    <DropdownMenuItem
+                                                        className="text-red-600"
+                                                        onClick={() => setUserToDelete({
+                                                            id: user._id,
+                                                            name: user.name
+                                                        })}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ) : null))
                     )}
                 </TableBody>
             </Table>

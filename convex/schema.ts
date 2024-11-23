@@ -8,6 +8,7 @@ export default defineSchema({
         email: v.string(),
         role: v.string(),
         status: v.union(v.literal("active"), v.literal("inactive")),
+        profilePicture: v.optional(v.string()),
         createdAt: v.number(),
         updatedAt: v.number(),
     }),

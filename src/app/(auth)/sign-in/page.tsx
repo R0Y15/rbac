@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -49,7 +50,12 @@ export default function SignInPage() {
             login(user);
             router.push('/admin/users');
         } catch (error: any) {
-            toast.error('Failed to sign in', { id: toastId });
+            // Extract the clean error message from the Convex error
+            const errorMessage = error.message || error.toString();
+            const cleanError = errorMessage.includes(']') 
+                ? errorMessage.split('] ').pop()?.trim() 
+                : errorMessage;
+            toast.error(cleanError || 'Failed to sign in', { id: toastId });
         } finally {
             setIsLoading(false);
         }
@@ -107,13 +113,12 @@ export default function SignInPage() {
                 <div className="text-center text-sm">
                     <p className="text-muted-foreground">
                         Don&apos;t have an account?{' '}
-                        <Button
-                            variant="link"
-                            className="p-0 h-auto font-normal"
-                            onClick={() => toast.error("Please contact your administrator")}
+                        <Link
+                            href="/sign-up"
+                            className="text-primary hover:text-primary/90 font-medium"
                         >
-                            Contact admin
-                        </Button>
+                            Sign up
+                        </Link>
                     </p>
                 </div>
             </div>

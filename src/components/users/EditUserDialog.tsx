@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import toast from "react-hot-toast";
 import { Id } from "../../../convex/_generated/dataModel";
+import ProfilePicture from "./ProfilePicture";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
 
 interface EditUserDialogProps {
   isOpen: boolean;
@@ -26,6 +28,7 @@ interface EditUserDialogProps {
     name: string;
     email: string;
     role: string;
+    profilePicture?: string | null;
   };
 }
 
@@ -37,9 +40,12 @@ export default function EditUserDialog({ isOpen, onClose, user }: EditUserDialog
     name: user.name,
     email: user.email,
     role: user.role,
+    profilePicture: user.profilePicture
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [showEmailValidation, setShowEmailValidation] = useState(false);
+  const { getAssignableRoles, canAssignRole } = useRolePermissions();
+  const assignableRoles = getAssignableRoles();
 
   // Check if email exists (excluding current user's email)
   const emailExists = useQuery(api.users.checkEmailExists, { 
@@ -81,12 +87,31 @@ export default function EditUserDialog({ isOpen, onClose, user }: EditUserDialog
     }
   };
 
+  const handleProfilePictureUpdate = (storageId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      profilePicture: storageId
+    }));
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
+        
+        <div className="flex justify-center mb-4">
+          <ProfilePicture
+            userId={user._id}
+            name={user.name}
+            profilePicture={formData.profilePicture}
+            size="lg"
+            editable
+            onUploadComplete={handleProfilePictureUpdate}
+          />
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
@@ -116,14 +141,15 @@ export default function EditUserDialog({ isOpen, onClose, user }: EditUserDialog
             <Select
               value={formData.role}
               onValueChange={(value) => setFormData({ ...formData, role: value })}
+              disabled={!canAssignRole(user.role)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(ROLE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
+                {assignableRoles.map((role: string) => (
+                  <SelectItem key={role} value={role}>
+                    {ROLE_LABELS[role as keyof typeof ROLE_LABELS]}
                   </SelectItem>
                 ))}
               </SelectContent>
