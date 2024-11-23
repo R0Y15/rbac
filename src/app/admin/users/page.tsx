@@ -26,7 +26,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
+import { Filter, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import EditUserDialog from "@/components/users/EditUserDialog";
 import {
@@ -39,6 +39,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import ProfilePicture from "@/components/users/ProfilePicture";
 import { useRolePermissions } from "@/hooks/useRolePermissions";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function UsersPage() {
     const { user } = useAuth();
@@ -66,22 +68,53 @@ export default function UsersPage() {
         email: string;
         role: string;
     } | null>(null);
+    const [roleFilters, setRoleFilters] = useState<string[]>([]);
+    const [statusFilters, setStatusFilters] = useState<string[]>([]);
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
-        let visibleUsers = users.filter(u => canViewRole(u.role));
+        let filtered = users.filter(u => canViewRole(u.role));
 
-        if (!searchQuery.trim()) return visibleUsers;
+        // Apply role filters
+        if (roleFilters.length > 0) {
+            filtered = filtered.filter(user => roleFilters.includes(user.role));
+        }
 
-        const query = searchQuery.toLowerCase();
-        return visibleUsers.filter(
-            (user) =>
-                user.name.toLowerCase().includes(query) ||
-                user.email.toLowerCase().includes(query)
-        );
-    }, [users, searchQuery, canViewRole]);
+        // Apply status filters
+        if (statusFilters.length > 0) {
+            filtered = filtered.filter(user => statusFilters.includes(user.status));
+        }
 
-    if (!users) return <div>Loading...</div>;
+        // Apply search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(
+                (user) =>
+                    user.name.toLowerCase().includes(query) ||
+                    user.email.toLowerCase().includes(query)
+            );
+        }
+
+        return filtered;
+    }, [users, searchQuery, roleFilters, statusFilters, canViewRole]);
+
+    const handleRoleFilterChange = (role: string) => {
+        setRoleFilters(prev => {
+            if (prev.includes(role)) {
+                return prev.filter(r => r !== role);
+            }
+            return [...prev, role];
+        });
+    };
+
+    const handleStatusFilterChange = (status: string) => {
+        setStatusFilters(prev => {
+            if (prev.includes(status)) {
+                return prev.filter(s => s !== status);
+            }
+            return [...prev, status];
+        });
+    };
 
     const handleRoleChange = async (userId: Id<"users">, newRole: string) => {
         setUpdating({ id: userId, field: 'role' });
@@ -124,6 +157,8 @@ export default function UsersPage() {
             setUserToDelete(null);
         }
     };
+
+    if (!users) return <div>Loading...</div>;
 
     return (
         <div className="max-w-screen-xl mx-auto px-4 space-y-6 p-6">
@@ -171,8 +206,79 @@ export default function UsersPage() {
                     <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>
+                            <div className="flex items-center gap-2">
+                                Role
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                                            <Filter className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-48">
+                                        <div className="space-y-2">
+                                            {Object.entries(VISIBLE_ROLE_LABELS).map(([role, label]) => (
+                                                <div key={role} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={`role-${role}`}
+                                                        checked={roleFilters.includes(role)}
+                                                        onCheckedChange={() => handleRoleFilterChange(role)}
+                                                    />
+                                                    <label
+                                                        htmlFor={`role-${role}`}
+                                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                    >
+                                                        {label}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </TableHead>
+                        <TableHead>
+                            <div className="flex items-center gap-2">
+                                Status
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                                            <Filter className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-48">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id="status-active"
+                                                    checked={statusFilters.includes("active")}
+                                                    onCheckedChange={() => handleStatusFilterChange("active")}
+                                                />
+                                                <label
+                                                    htmlFor="status-active"
+                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                >
+                                                    Active
+                                                </label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id="status-inactive"
+                                                    checked={statusFilters.includes("inactive")}
+                                                    onCheckedChange={() => handleStatusFilterChange("inactive")}
+                                                />
+                                                <label
+                                                    htmlFor="status-inactive"
+                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                >
+                                                    Inactive
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </TableHead>
                         <TableHead className="w-[70px]">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -195,7 +301,7 @@ export default function UsersPage() {
                             </TableCell>
                         </TableRow>
                     ) : (
-                        filteredUsers.map((user: any) => (
+                        filteredUsers.map((user) => (
                             user.role !== ROLES.GHOST ? (
                                 <TableRow key={user._id}>
                                     <TableCell>
