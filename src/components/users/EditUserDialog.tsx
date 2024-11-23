@@ -44,7 +44,7 @@ export default function EditUserDialog({ isOpen, onClose, user }: EditUserDialog
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [showEmailValidation, setShowEmailValidation] = useState(false);
-  const { getAssignableRoles, canAssignRole } = useRolePermissions();
+  const { getAssignableRoles, canAssignRole, currentUserRole } = useRolePermissions();
   const assignableRoles = getAssignableRoles();
 
   // Check if email exists (excluding current user's email)
@@ -138,22 +138,30 @@ export default function EditUserDialog({ isOpen, onClose, user }: EditUserDialog
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value })}
-              disabled={!canAssignRole(user.role)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {assignableRoles.map((role: string) => (
-                  <SelectItem key={role} value={role}>
-                    {ROLE_LABELS[role as keyof typeof ROLE_LABELS]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {currentUserRole === ROLES.ADMIN ? (
+              <Input
+                id="role"
+                value={ROLE_LABELS[formData.role as keyof typeof ROLE_LABELS]}
+                disabled
+              />
+            ) : (
+              <Select
+                value={formData.role}
+                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                disabled={!canAssignRole(user.role)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignableRoles.map((role: string) => (
+                    <SelectItem key={role} value={role}>
+                      {ROLE_LABELS[role as keyof typeof ROLE_LABELS]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" type="button" onClick={onClose}>

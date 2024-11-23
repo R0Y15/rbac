@@ -1,42 +1,35 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ROLES } from "@/lib/constants/roles";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export default function SignInPage() {
-    const { login, user } = useAuth();
-    const router = useRouter();
-    const signIn = useMutation(api.auth.signIn);
-    const [email, setEmail] = useState("");
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+    });
     const [isLoading, setIsLoading] = useState(false);
-
-    useEffect(() => {
-        // If user is already logged in, redirect to admin/users
-        if (user) {
-            router.push('/admin/users');
-        }
-    }, [user, router]);
-
-    const validateEmail = (email: string): boolean => {
-        return EMAIL_REGEX.test(email);
-    };
+    const signIn = useMutation(api.auth.signIn);
+    const { login } = useAuth();
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!validateEmail(email)) {
+        
+        if (!EMAIL_REGEX.test(formData.email)) {
             toast.error("Please enter a valid email address");
             return;
         }
@@ -45,15 +38,17 @@ export default function SignInPage() {
         const toastId = toast.loading('Signing in...');
 
         try {
-            const user = await signIn({ email });
+            const user = await signIn({
+                email: formData.email,
+                password: formData.password,
+            });
             toast.success('Signed in successfully', { id: toastId });
             login(user);
             router.push('/admin/users');
         } catch (error: any) {
-            // Extract the clean error message from the Convex error
             const errorMessage = error.message || error.toString();
-            const cleanError = errorMessage.includes(']') 
-                ? errorMessage.split('] ').pop()?.trim() 
+            const cleanError = errorMessage.includes(']')
+                ? errorMessage.split('] ').pop()?.trim()
                 : errorMessage;
             toast.error(cleanError || 'Failed to sign in', { id: toastId });
         } finally {
@@ -63,20 +58,20 @@ export default function SignInPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="w-full max-w-md space-y-8 px-4">
-                <div className="space-y-4 text-center">
+            <div className="mx-auto w-full max-w-[350px] space-y-6">
+                <div className="space-y-2 text-center">
                     <Image
-                        src="/auth.svg"
+                        src="/logo.png"
                         alt="Logo"
                         width={48}
                         height={48}
                         className="mx-auto"
                     />
-                    <h2 className="text-2xl font-semibold tracking-tight">
+                    <h1 className="text-2xl font-semibold tracking-tight">
                         Welcome back
-                    </h2>
+                    </h1>
                     <p className="text-sm text-muted-foreground">
-                        Enter your email to sign in to your account
+                        Enter your credentials to sign in to your account
                     </p>
                 </div>
 
@@ -86,14 +81,23 @@ export default function SignInPage() {
                         <Input
                             id="email"
                             type="email"
-                            placeholder="name@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={isLoading}
+                            placeholder="m@example.com"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             required
                         />
                     </div>
-
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            required
+                        />
+                    </div>
                     <Button
                         type="submit"
                         className="w-full"
@@ -112,7 +116,7 @@ export default function SignInPage() {
 
                 <div className="text-center text-sm">
                     <p className="text-muted-foreground">
-                        Don&apos;t have an account?{' '}
+                        Don't have an account?{' '}
                         <Link
                             href="/sign-up"
                             className="text-primary hover:text-primary/90 font-medium"

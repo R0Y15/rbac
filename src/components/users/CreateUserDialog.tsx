@@ -5,228 +5,207 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
-import { VISIBLE_ROLES, VISIBLE_ROLE_LABELS } from "@/lib/constants/roles";
+import { ROLE_LABELS, VISIBLE_ROLES, VISIBLE_ROLE_LABELS } from "@/lib/constants/roles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
+import { ROLES } from "@/lib/constants/roles";
 
 interface CreateUserDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+    isOpen: boolean;
+    onClose: () => void;
 }
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
+const validateEmail = (email: string): boolean => EMAIL_REGEX.test(email);
+
 export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogProps) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    role: "",
-  });
-  const [profilePicture, setProfilePicture] = useState<{
-    storageId: string | null;
-    previewUrl: string | null;
-  }>({ storageId: null, previewUrl: null });
-  const [isUploading, setIsUploading] = useState(false);
-  const [showEmailValidation, setShowEmailValidation] = useState(false);
+    const { currentUserRole, canAssignRole } = useRolePermissions();
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        role: "",
+    });
+    const [profilePicture, setProfilePicture] = useState<{
+        storageId: string | null;
+        previewUrl: string | null;
+    }>({ storageId: null, previewUrl: null });
+    const [isLoading, setIsLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const createUser = useMutation(api.users.createUser);
+    const generateUploadUrl = useMutation(api.users.generateUploadUrl);
 
-  const createUser = useMutation(api.users.createUser);
-  const generateUploadUrl = useMutation(api.users.generateUploadUrl);
+    const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.[0]) return;
 
-  const validateEmail = (email: string) => EMAIL_REGEX.test(email);
+        setIsUploading(true);
+        try {
+            const file = e.target.files[0];
+            const uploadUrl = await generateUploadUrl();
+            await fetch(uploadUrl, {
+                method: "POST",
+                body: file
+            });
 
-  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+            setProfilePicture({
+                storageId: uploadUrl,
+                previewUrl: URL.createObjectURL(file)
+            });
+        } catch (error) {
+            toast.error("Failed to upload image");
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
-    // Validate file type and size
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      toast.error('File size should be less than 5MB');
-      return;
-    }
+        if (!validateEmail(formData.email)) {
+            toast.error("Please enter a valid email address");
+            return;
+        }
 
-    setIsUploading(true);
-    const toastId = toast.loading('Uploading image...');
+        setIsLoading(true);
+        const toastId = toast.loading('Creating user...');
 
-    try {
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      
-      // Get upload URL from Convex
-      const postUrl = await generateUploadUrl();
-      
-      // Upload file to storage
-      const result = await fetch(postUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      
-      if (!result.ok) {
-        throw new Error('Failed to upload image');
-      }
-      
-      const { storageId } = await result.json();
-      
-      setProfilePicture({
-        storageId,
-        previewUrl,
-      });
-      
-      toast.success('Profile picture uploaded', { id: toastId });
-    } catch (error) {
-      toast.error('Failed to upload image', { id: toastId });
-    } finally {
-      setIsUploading(false);
-    }
-  };
+        try {
+            // If admin is creating user, force role to be USER
+            const roleToAssign = currentUserRole === ROLES.ADMIN ? ROLES.USER : formData.role;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+            const user = await createUser({
+                name: formData.name,
+                email: formData.email,
+                role: roleToAssign,
+                profilePicture: profilePicture.storageId || undefined,
+            });
 
-    if (!formData.name || !formData.email || !formData.role) {
-      toast.error("Please fill in all fields");
-      return;
-    }
+            toast.success('User created successfully', { id: toastId });
+            onClose();
+        } catch (error: any) {
+            toast.error('Failed to create user', { id: toastId });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    if (!EMAIL_REGEX.test(formData.email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create User</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Name</Label>
+                        <Input
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            required
+                        />
+                    </div>
 
-    const toastId = toast.loading('Creating user...');
+                    <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            required
+                        />
+                    </div>
 
-    try {
-      await createUser({
-        ...formData,
-        profilePicture: profilePicture.storageId || undefined,
-      });
-      toast.success('User created successfully', { id: toastId });
-      onClose();
-      // Reset form
-      setFormData({ name: "", email: "", role: "" });
-      setProfilePicture({ storageId: null, previewUrl: null });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create user', { id: toastId });
-    }
-  };
+                    {currentUserRole === ROLES.ADMIN ? (
+                        <div className="space-y-2">
+                            <Label htmlFor="role">Role</Label>
+                            <Input
+                                id="role"
+                                value={ROLE_LABELS[ROLES.USER]}
+                                disabled
+                            />
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <Label htmlFor="role">Role</Label>
+                            <Select
+                                value={formData.role}
+                                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.entries(VISIBLE_ROLE_LABELS)
+                                        .filter(([role]) => canAssignRole(role))
+                                        .map(([value, label]) => (
+                                            <SelectItem key={value} value={value}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
+                    {/* Profile Picture Upload Section */}
+                    <div className="space-y-2">
+                        <Label>Profile Picture</Label>
+                        <div className="flex items-center gap-4">
+                            <Avatar className="w-16 h-16">
+                                <AvatarImage src={profilePicture.previewUrl || undefined} />
+                                <AvatarFallback>
+                                    {formData.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <Label
+                                htmlFor="picture"
+                                className="cursor-pointer border rounded-md px-3 py-2 hover:bg-muted"
+                            >
+                                {isUploading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Upload className="h-4 w-4" />
+                                )}
+                            </Label>
+                            <Input
+                                id="picture"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleProfilePictureUpload}
+                                disabled={isUploading}
+                            />
+                        </div>
+                    </div>
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex justify-center mb-4">
-            <div className="relative group">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={profilePicture.previewUrl || undefined} />
-                <AvatarFallback>{formData.name ? getInitials(formData.name) : 'U'}</AvatarFallback>
-              </Avatar>
-              
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleProfilePictureUpload}
-                    disabled={isUploading}
-                  />
-                  {isUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  ) : (
-                    <Upload className="h-4 w-4 text-white" />
-                  )}
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="John Doe"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className={showEmailValidation && !validateEmail(formData.email) ? 'border-red-500' : ''}
-              required
-            />
-            {showEmailValidation && !validateEmail(formData.email) && formData.email && (
-              <p className="text-sm text-red-500">Please enter a valid email address</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value as keyof typeof VISIBLE_ROLES })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(VISIBLE_ROLE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {isUploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding User...
-                </>
-              ) : (
-                'Add User'
-              )}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-} 
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={isLoading || isUploading}
+                    >
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creating...
+                            </>
+                        ) : (
+                            'Create User'
+                        )}
+                    </Button>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}

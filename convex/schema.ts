@@ -6,11 +6,12 @@ export default defineSchema({
     users: defineTable({
         name: v.string(),
         email: v.string(),
+        password: v.string(),
         role: v.string(),
         status: v.union(v.literal("active"), v.literal("inactive")),
-        profilePicture: v.optional(v.string()),
         createdAt: v.number(),
         updatedAt: v.number(),
+        profilePicture: v.optional(v.string()),
     }),
     roles: defineTable({
         name: v.string(),

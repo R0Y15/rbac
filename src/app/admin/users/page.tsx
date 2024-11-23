@@ -50,6 +50,7 @@ export default function UsersPage() {
         canCreateUser,
         canViewRole,
         canUpdateStatus,
+        currentUserRole,
     } = useRolePermissions();
     const users = useQuery(api.users.listUsers);
     const [searchQuery, setSearchQuery] = useState("");
@@ -73,7 +74,7 @@ export default function UsersPage() {
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
-        let filtered = users.filter(u => canViewRole(u.role));
+        let filtered = users.filter(() => canViewRole());
 
         // Apply role filters
         if (roleFilters.length > 0) {
@@ -317,22 +318,28 @@ export default function UsersPage() {
                                     </TableCell>
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell>
-                                        <Select
-                                            value={user.role}
-                                            onValueChange={(value) => handleRoleChange(user._id, value)}
-                                            disabled={!canEditUser(user.role) || updating.id === user._id}
-                                        >
-                                            <SelectTrigger className="w-[180px]">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(VISIBLE_ROLE_LABELS).map(([value, label]) => (
-                                                    <SelectItem key={value} value={value}>
-                                                        {label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        {currentUserRole === ROLES.ADMIN ? (
+                                            <div className="w-[180px] px-3 py-2 border rounded-md bg-muted">
+                                                {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS]}
+                                            </div>
+                                        ) : (
+                                            <Select
+                                                value={user.role}
+                                                onValueChange={(value) => handleRoleChange(user._id, value)}
+                                                disabled={!canEditUser(user.role) || updating.id === user._id}
+                                            >
+                                                <SelectTrigger className="w-[180px]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {Object.entries(VISIBLE_ROLE_LABELS).map(([value, label]) => (
+                                                        <SelectItem key={value} value={value}>
+                                                            {label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <Select
