@@ -134,7 +134,7 @@ export default function SignUpPage() {
             <div className="w-full max-w-md space-y-8 px-4">
                 <div className="space-y-4 text-center">
                     <Image
-                        src="/logo.png"
+                        src="/auth.svg"
                         alt="Logo"
                         width={48}
                         height={48}

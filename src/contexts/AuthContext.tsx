@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 interface User {
     _id: string;
@@ -26,20 +27,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
-        // Check for user data in localStorage on initial load
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
-            // Set auth token cookie
-            document.cookie = `auth-token=${JSON.parse(storedUser)._id}; path=/`;
+            const userData = JSON.parse(storedUser);
+            if (userData.status === 'inactive') {
+                toast.error('Your account has been disabled. Please contact an administrator.');
+                localStorage.removeItem('user');
+                document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+                router.push('/sign-in');
+                return;
+            }
+            setUser(userData);
+            document.cookie = `auth-token=${userData._id}; path=/`;
         }
         setIsLoading(false);
-    }, []);
+    }, [router]);
 
     const login = (userData: User) => {
+        if (userData.status === 'inactive') {
+            toast.error('Your account has been disabled. Please contact an administrator.');
+            return;
+        }
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
-        // Set auth token cookie
         document.cookie = `auth-token=${userData._id}; path=/`;
         router.push('/admin/users');
     };
@@ -47,7 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = () => {
         setUser(null);
         localStorage.removeItem('user');
-        // Remove auth token cookie
         document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
         router.push('/sign-in');
     };

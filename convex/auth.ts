@@ -67,8 +67,9 @@ export const signIn = mutation({
             throw new Error("Email not found");
         }
 
+        // Check if user account is inactive
         if (user.status === "inactive") {
-            throw new Error("Account is inactive");
+            throw new Error("Your account has been disabled. Please contact an administrator.");
         }
 
         return user;
