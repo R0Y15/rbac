@@ -51,7 +51,7 @@ export default function SignUpPage() {
                 body: file,
             });
             const { storageId } = await result.json();
-            
+
             setProfilePicture({
                 storageId,
                 previewUrl: URL.createObjectURL(file),
@@ -66,7 +66,7 @@ export default function SignUpPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validation
         if (!EMAIL_REGEX.test(formData.email)) {
             toast.error("Please enter a valid email address");
@@ -114,10 +114,10 @@ export default function SignUpPage() {
             <div className="mx-auto w-full max-w-[350px] space-y-6">
                 <div className="space-y-2 text-center">
                     <Image
-                        src="/logo.png"
+                        src="/hero.svg"
                         alt="Logo"
-                        width={48}
-                        height={48}
+                        width={100}
+                        height={100}
                         className="mx-auto"
                     />
                     <h1 className="text-2xl font-semibold tracking-tight">
@@ -130,8 +130,7 @@ export default function SignUpPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Profile Picture Upload */}
-                    <div className="space-y-2">
-                        <Label>Profile Picture</Label>
+                    <div className="space-y-2 flex flex-col items-center">
                         <div className="flex items-center gap-4">
                             <Avatar className="w-16 h-16">
                                 <AvatarImage src={profilePicture.previewUrl || undefined} />
@@ -158,6 +157,7 @@ export default function SignUpPage() {
                                 disabled={isUploading}
                             />
                         </div>
+                        <Label className="my-4">Profile Picture</Label>
                     </div>
 
                     <div className="space-y-2">
@@ -188,7 +188,7 @@ export default function SignUpPage() {
                         <Input
                             id="password"
                             type="password"
-                            placeholder="••••••••"
+                            placeholder="Password"
                             value={formData.password}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             required
@@ -203,7 +203,7 @@ export default function SignUpPage() {
                         <Input
                             id="confirmPassword"
                             type="password"
-                            placeholder="••••••••"
+                            placeholder="Confirm Password"
                             value={formData.confirmPassword}
                             onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                             required

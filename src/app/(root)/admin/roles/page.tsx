@@ -39,6 +39,12 @@ const RolesPage = () => {
                     </Card>
                 ))}
             </div>
+
+            <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+                <div className="max-w-screen-2xl mx-auto text-center text-sm text-muted-foreground">
+                    <p>Role-Based Access Control System • View and manage user roles and permissions • Developed by <a href="https://github.com/R0Y15" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/90 font-medium">Roy</a> ❤️</p>
+                </div>
+            </footer>
         </div>
     )
 }

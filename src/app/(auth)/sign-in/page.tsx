@@ -67,10 +67,10 @@ export default function SignInPage() {
             <div className="mx-auto w-full max-w-[350px] space-y-6">
                 <div className="space-y-2 text-center">
                     <Image
-                        src="/logo.png"
+                        src="/hero.svg"
                         alt="Logo"
-                        width={48}
-                        height={48}
+                        width={100}
+                        height={100}
                         className="mx-auto"
                     />
                     <h1 className="text-2xl font-semibold tracking-tight">
@@ -119,6 +119,36 @@ export default function SignInPage() {
                         )}
                     </Button>
                 </form>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                            Or continue with
+                        </span>
+                    </div>
+                </div>
+
+                <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                        const viewerData = {
+                            _id: 'viewer',
+                            name: 'Viewer',
+                            email: 'viewer@example.com',
+                            role: ROLES.VIEWER,
+                            status: 'active'
+                        };
+                        localStorage.setItem('user', JSON.stringify(viewerData));
+                        document.cookie = `auth-token=${viewerData._id}; path=/`;
+                        router.push('/admin/users');
+                    }}
+                >
+                    Continue as Guest
+                </Button>
 
                 <div className="text-center text-sm">
                     <p className="text-muted-foreground">
