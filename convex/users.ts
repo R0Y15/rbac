@@ -131,8 +131,14 @@ export const generateUploadUrl = mutation({
 });
 
 export const getProfilePictureUrl = query({
-    args: { storageId: v.string() },
+    args: { storageId: v.optional(v.string()) },
     handler: async (ctx, args) => {
-        return await ctx.storage.getUrl(args.storageId);
+        if (!args.storageId) return null;
+        try {
+            return await ctx.storage.getUrl(args.storageId);
+        } catch (error) {
+            console.error("Error getting profile picture URL:", error);
+            return null;
+        }
     },
 });

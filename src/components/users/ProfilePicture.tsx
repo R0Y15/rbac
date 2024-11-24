@@ -29,9 +29,9 @@ export default function ProfilePicture({
     const [isUploading, setIsUploading] = useState(false);
     const generateUploadUrl = useMutation(api.users.generateUploadUrl);
     const updateProfilePicture = useMutation(api.users.updateProfilePicture);
-    const imageUrl = useQuery(api.users.getProfilePictureUrl,
-        profilePicture ? { storageId: profilePicture } : "skip"
-    );
+    const imageUrl = useQuery(api.users.getProfilePictureUrl, { 
+        storageId: profilePicture ?? undefined 
+    });
 
     const sizeClasses = {
         sm: "h-8 w-8",
@@ -58,7 +58,6 @@ export default function ProfilePicture({
 
         try {
             const postUrl = await generateUploadUrl();
-
             const result = await fetch(postUrl, {
                 method: "POST",
                 headers: { "Content-Type": file.type },
@@ -66,11 +65,10 @@ export default function ProfilePicture({
             });
 
             if (!result.ok) {
-                throw new Error('Failed to upload image');
+                throw new Error('Upload failed');
             }
 
             const { storageId } = await result.json();
-
             await updateProfilePicture({ userId, storageId });
 
             if (onUploadComplete) {
@@ -79,6 +77,7 @@ export default function ProfilePicture({
 
             toast.success('Profile picture updated', { id: toastId });
         } catch (error) {
+            console.error('Upload error:', error);
             toast.error('Failed to upload image', { id: toastId });
         } finally {
             setIsUploading(false);
