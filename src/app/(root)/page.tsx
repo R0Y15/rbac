@@ -25,7 +25,10 @@ export default function Home() {
           </p>
         </div>
 
-        <Button onClick={() => router.push('/sign-in')}>
+        <Button
+          className="group"
+          onClick={() => router.push("/sign-in")}
+        >
           Continue to Login
           <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Button>
