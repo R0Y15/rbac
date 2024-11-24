@@ -117,6 +117,10 @@ export const signIn = mutation({
             throw new Error("Invalid email or password");
         }
 
+        if (user.status === "inactive") {
+            throw new Error("Account is inactive. Please contact an administrator.");
+        }
+
         const isValid = await ctx.runMutation(api.auth.verifyPassword, {
             hashedPassword: user.password,
             password: args.password,
