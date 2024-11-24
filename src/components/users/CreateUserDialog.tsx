@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Upload } from "lucide-react";
+import { Eye, EyeOff, Loader2, RefreshCw, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import { ROLE_LABELS, VISIBLE_ROLES, VISIBLE_ROLE_LABELS } from "@/lib/constants/roles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,9 +45,37 @@ export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogPr
     }>({ storageId: null, previewUrl: null });
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const createUser = useMutation(api.users.createUser);
     const generateUploadUrl = useMutation(api.users.generateUploadUrl);
     const hashPassword = useMutation(api.auth.hashPassword);
+
+    const generatePassword = () => {
+        const length = 10;
+        const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const numbers = "0123456789";
+        let password = "";
+        
+        password += letters[Math.floor(Math.random() * letters.length)];
+        password += numbers[Math.floor(Math.random() * numbers.length)];
+        
+        const charset = letters + numbers;
+        for (let i = 2; i < length; i++) {
+            password += charset[Math.floor(Math.random() * charset.length)];
+        }
+
+        password = password.split('').sort(() => Math.random() - 0.5).join('');
+        
+        if (PASSWORD_REGEX.test(password)) {
+            setFormData(prev => ({
+                ...prev,
+                password,
+                confirmPassword: password
+            }));
+        } else {
+            generatePassword();
+        }
+    };
 
     const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return;
@@ -84,11 +112,6 @@ export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogPr
             toast.error("Password is required");
             return;
         }
-
-        // if (formData.password !== formData.confirmPassword) {
-        //     toast.error("Passwords do not match");
-        //     return;
-        // }
 
         if (!PASSWORD_REGEX.test(formData.password)) {
             toast.error("Password must be at least 8 characters long and contain at least one letter and one number");
@@ -187,14 +210,40 @@ export default function CreateUserDialog({ isOpen, onClose }: CreateUserDialogPr
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password">Create Password</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            required
-                        />
+                        <Label htmlFor="password">Password</Label>
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                required
+                            />
+                            <div className="absolute right-0 top-0 flex h-full items-center space-x-1 pr-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={generatePassword}
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
                         <p className="text-xs text-muted-foreground">
                             Must be at least 8 characters with letters and numbers
                         </p>
