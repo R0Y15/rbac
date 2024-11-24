@@ -42,6 +42,12 @@ export default function SignInPage() {
                 email: formData.email,
                 password: formData.password,
             });
+            
+            if (user.status === "inactive") {
+                toast.error("Account is inactive. Please contact an administrator.", { id: toastId });
+                return;
+            }
+            
             toast.success('Signed in successfully', { id: toastId });
             login(user);
             router.push('/admin/users');
