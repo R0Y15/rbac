@@ -47,5 +47,28 @@ export const VISIBLE_ROLE_LABELS = {
   // [ROLES.VIEWER]: 'Viewer',
 } as const;
 
+export const ROLE_INFO = {
+  [ROLES.SUPER_ADMIN]: {
+    description: 'Can manage all users and roles',
+    image: '/S-admin.svg',
+    access: 'Full Access to all features',
+  },
+  [ROLES.ADMIN]: {
+    description: 'Can manage all users',
+    image: '/admin.svg',
+    access: 'Full Access to all features',
+  },
+  [ROLES.USER]: {
+    description: 'Can manage their own profile and settings',
+    image: '/user.svg',
+    access: 'Limited Access to all features',
+  },
+  [ROLES.VIEWER]: {
+    description: 'Can view all users and roles',
+    image: '/viewer.svg',
+    access: 'View Only Access',
+  },
+} as const;
+
 
 export type Role = keyof typeof ROLE_LABELS; 
