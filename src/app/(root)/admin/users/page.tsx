@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "../../../../../convex/_generated/api";
 import CreateUserDialog from "@/components/users/CreateUserDialog";
 import { ROLE_LABELS, ROLES, VISIBLE_ROLE_LABELS, VISIBLE_ROLES } from "@/lib/constants/roles";
-import { Id } from "../../../../convex/_generated/dataModel";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
     Table,
